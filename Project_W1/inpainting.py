@@ -59,22 +59,49 @@ def laplace_equation(f, mask, param):
         idx = idx + 1
 
     # South side boundary conditions
-    i = ni_ext
+    i = ni_ext - 2
     for j in range(nj_ext):
         p = j * (ni + 2) + i
-        # COMPLETE THE CODE
+        
+        idx_Ai.insert(idx, p)
+        idx_Aj.insert(idx, p)
+        a_ij.insert(idx, 1)
+        idx = idx + 1
+
+        idx_Ai.insert(idx, p)
+        idx_Aj.insert(idx, p - 1)
+        a_ij.insert(idx, -1)
+        idx = idx + 1
 
     # West side boundary conditions
-    j = 0
+    j = 1
     for i in range(ni_ext):
         p = j * (ni + 2) + i
-        # COMPLETE THE CODE
+        
+        idx_Ai.insert(idx, p)
+        idx_Aj.insert(idx,p)
+        a_ij.insert(idx, 1)
+        idx = idx + 1
+
+        idx_Ai.insert(idx, p)
+        idx_Aj.insert(idx, p + (ni + 2))
+        a_ij.insert(idx, -1)
+        idx = idx + 1
 
     # East side boundary conditions
-    j = nj_ext
+    j = nj_ext - 2
     for i in range(ni_ext):
         p = (j - 1) * (ni + 2) + i
-        # COMPLETE THE CODE
+        
+        idx_Ai.insert(idx, p)
+        idx_Aj.insert(idx,p)
+        a_ij.insert(idx, 1)
+        idx = idx + 1
+
+        idx_Ai.insert(idx, p)
+        idx_Aj.insert(idx, p - (ni + 2))
+        a_ij.insert(idx, -1)
+        idx = idx + 1
 
     # Looping over the pixels
     for j in range(1, nj + 1):
