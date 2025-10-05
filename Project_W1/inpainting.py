@@ -116,11 +116,13 @@ def laplace_equation(f, mask, param):
                 # COMPLETE THE CODE
                 pass
 
-            else: # we do not have to in-paint this pixel
+            else: # we do not have to in-paint this pixel -> we impose u = f
 
-                # Fill Idx_Ai, idx_Aj and a_ij with the corresponding values and vector b
-                # COMPLETE THE CODE
-                pass
+                idx_Ai.insert(idx, p)
+                idx_Aj.insert(idx, p)
+                a_ij.insert(idx, 1)
+                b[p - 1] = f_ext[i, j]
+                idx = idx + 1
 
     idx_Ai_c = [i - 1 for i in idx_Ai]
     idx_Aj_c = [i - 1 for i in idx_Aj]
