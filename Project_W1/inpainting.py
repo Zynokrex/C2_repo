@@ -128,8 +128,8 @@ def laplace_equation(f, mask, param):
     idx_Aj_c = [i - 1 for i in idx_Aj]
 
     # COMPLETE THE CODE (fill out the interrogation marks ???)
-    # A = sparse(idx_Ai_c, idx_Aj_c, a_ij, ???, ???)
-    # x = spsolve(A, b)
+    A = sparse(idx_Ai_c, idx_Aj_c, a_ij, ni_ext, nj_ext)
+    x = spsolve(A, b)
 
     u_ext = np.reshape(x,(ni+2, nj+2), order='F')
     u_ext_i = u_ext.shape[0]
