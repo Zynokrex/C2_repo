@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+
 img_folder = 'images/'
 img_path = img_folder + 'image7_to_restore.jpg'
 img_bgr = cv2.imread(img_path)
