@@ -36,7 +36,6 @@ def laplace_equation(f, mask, param):
     b = np.zeros(nPixels, dtype=float)
 
     # Vector counter
-    idx=0
     idx_Ai=[]
     idx_Aj=[]
     a_ij=[]
@@ -108,42 +107,36 @@ def laplace_equation(f, mask, param):
                 # u_i,j, u_i+1,j, u_i-1,j, u_i,j+1, u_i,j-1
 
                 # u_i,j
-                idx_Ai.insert(idx, p)
-                idx_Aj.insert(idx, p)
-                a_ij.insert(idx, -(2*alpha_i + 2*alpha_j))
-                idx = idx + 1
+                idx_Ai.append(p)
+                idx_Aj.append(p)
+                a_ij.append(-(2*alpha_i + 2*alpha_j))
 
                 # u_i+1,j
-                idx_Ai.insert(idx, p)
-                idx_Aj.insert(idx, p + 1)
-                a_ij.insert(idx, alpha_i)
-                idx = idx + 1
+                idx_Ai.append(p)
+                idx_Aj.append(p + 1)
+                a_ij.append(alpha_i)
 
                 # u_i-1,j
-                idx_Ai.insert(idx, p)
-                idx_Aj.insert(idx, p - 1)
-                a_ij.insert(idx, alpha_i)
-                idx = idx + 1
+                idx_Ai.append(p)
+                idx_Aj.append(p - 1)
+                a_ij.append(alpha_i)
 
                 # u_i,j+1, we move forward a col of the matrix
-                idx_Ai.insert(idx, p)
-                idx_Aj.insert(idx, p + (ni + 2))
-                a_ij.insert(idx, alpha_j)
-                idx = idx + 1
+                idx_Ai.append(p)
+                idx_Aj.append(p + (ni + 2))
+                a_ij.append(alpha_j)
 
                 # u_i,j-1, we move back a col of the matrix
-                idx_Ai.insert(idx, p)
-                idx_Aj.insert(idx, p - (ni + 2))
-                a_ij.insert(idx, alpha_j)
-                idx = idx + 1
+                idx_Ai.append(p)
+                idx_Aj.append(p - (ni + 2))
+                a_ij.append(alpha_j)
 
             else: # we do not have to in-paint this pixel -> we impose u = f
 
-                idx_Ai.insert(idx, p)
-                idx_Aj.insert(idx, p)
-                a_ij.insert(idx, 1)
+                idx_Ai.append(p)
+                idx_Aj.append(p)
+                a_ij.append(1)
                 b[p - 1] = f_ext[i, j]
-                idx = idx + 1
 
     idx_Ai_c = [i - 1 for i in idx_Ai]
     idx_Aj_c = [i - 1 for i in idx_Aj]
