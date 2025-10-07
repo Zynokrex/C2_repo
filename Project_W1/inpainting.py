@@ -114,7 +114,38 @@ def laplace_equation(f, mask, param):
 
                 # Fill Idx_Ai, idx_Aj and a_ij with the corresponding values and vector b
                 # COMPLETE THE CODE
-                pass
+                #We need to insert 5 pixels: uij, ui+1j, ui-1j, uij+1, uij-1
+
+                #uij
+                idx_Ai.insert(idx, p)
+                idx_Aj.insert(idx, p)
+                a_ij.insert(idx, -2*(param.hi**2+param.hj**2))
+                idx = idx + 1
+
+                #ui+1j
+                idx_Ai.insert(idx, p)
+                idx_Aj.insert(idx, p + 1)
+                a_ij.insert(idx, param.hj**2)
+                idx = idx + 1
+
+                #ui-1j
+                idx_Ai.insert(idx, p)
+                idx_Aj.insert(idx, p - 1)
+                a_ij.insert(idx, param.hj**2)
+                idx = idx + 1
+
+                #uij+1, we move forward a col of the matrix
+                idx_Ai.insert(idx, p)
+                idx_Aj.insert(idx, p + (ni + 2))
+                a_ij.insert(idx, param.hi**2)
+                idx = idx + 1
+
+                #uij-1, we move back a col of the matrix
+                idx_Ai.insert(idx, p)
+                idx_Aj.insert(idx, p - (ni + 2))
+                a_ij.insert(idx, param.hi**2)
+                idx = idx + 1
+                
 
             else: # we do not have to in-paint this pixel -> we impose u = f
 
@@ -123,6 +154,7 @@ def laplace_equation(f, mask, param):
                 a_ij.insert(idx, 1)
                 b[p - 1] = f_ext[i, j]
                 idx = idx + 1
+
 
     idx_Ai_c = [i - 1 for i in idx_Ai]
     idx_Aj_c = [i - 1 for i in idx_Aj]
