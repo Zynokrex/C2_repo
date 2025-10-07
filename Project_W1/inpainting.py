@@ -43,109 +43,99 @@ def laplace_equation(f, mask, param):
 
     # North side boundary conditions
     i = 1
-    for j in range(nj_ext):
-        # from image matrix (i, j) coordinates to vectorial(p) coordinate
-        p = j * (ni + 2) + i
+    for j in range(1, nj_ext + 1): 
+        p = (j-1)*(ni+2)+i
+        
+        idx_Ai.append(p)
+        idx_Aj.append(p)
+        a_ij.append(1)
 
-        # Fill Idx_Ai, idx_Aj and a_ij with the corresponding values and vector b
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx, p)
-        a_ij.insert(idx, 1)
-        idx = idx + 1
-
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx, p + 1)
-        a_ij.insert(idx, -1)
-        idx = idx + 1
+        idx_Ai.append(p)
+        idx_Aj.append(p + 1)
+        a_ij.append(-1)
 
     # South side boundary conditions
-    i = ni_ext - 2
-    for j in range(nj_ext):
-        p = j * (ni + 2) + i
-        
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx, p)
-        a_ij.insert(idx, 1)
-        idx = idx + 1
+    i = ni_ext
+    for j in range(1, nj_ext + 1):
+        p = (j-1)*(ni+2)+i
 
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx, p - 1)
-        a_ij.insert(idx, -1)
-        idx = idx + 1
+        idx_Ai.append(p)
+        idx_Aj.append(p)
+        a_ij.append(1)
+
+        idx_Ai.append(p)
+        idx_Aj.append(p - 1)
+        a_ij.append(-1)
 
     # West side boundary conditions
     j = 1
-    for i in range(ni_ext):
-        p = j * (ni + 2) + i
-        
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx,p)
-        a_ij.insert(idx, 1)
-        idx = idx + 1
+    for i in range(1, ni_ext + 1):
+        p = (j-1)*(ni+2)+i
 
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx, p + (ni + 2))
-        a_ij.insert(idx, -1)
-        idx = idx + 1
+        idx_Ai.append(p)
+        idx_Aj.append(p)
+        a_ij.append(1)
+
+        idx_Ai.append(p)
+        idx_Aj.append(p + (ni + 2))
+        a_ij.append(-1)
 
     # East side boundary conditions
-    j = nj_ext - 2
-    for i in range(ni_ext):
-        p = (j - 1) * (ni + 2) + i
-        
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx,p)
-        a_ij.insert(idx, 1)
-        idx = idx + 1
+    j = nj_ext
+    for i in range(1, ni_ext + 1):
+        p = (j-1)*(ni+2)+i
 
-        idx_Ai.insert(idx, p)
-        idx_Aj.insert(idx, p - (ni + 2))
-        a_ij.insert(idx, -1)
-        idx = idx + 1
+        idx_Ai.append(p)
+        idx_Aj.append(p)
+        a_ij.append(1)
+
+        idx_Ai.append(p)
+        idx_Aj.append(p - (ni + 2))
+        a_ij.append(-1)
+
+    alpha_i = 1.0 / (param.hi**2)
+    alpha_j = 1.0 / (param.hj**2)
 
     # Looping over the pixels
-    for j in range(1, nj + 1):
-        for i in range(1, ni + 1):
+    for j in range(2, nj_ext):
+        for i in range(2, ni_ext):
 
-            # from image matrix (i, j) coordinates to vectorial(p) coordinate
-            p = j * (ni + 2) + i
+            p = (j-1)*(ni+2)+i
 
             if mask_ext[i, j] == 1: # we have to in-paint this pixel
 
-                # Fill Idx_Ai, idx_Aj and a_ij with the corresponding values and vector b
-                # COMPLETE THE CODE
-                #We need to insert 5 pixels: uij, ui+1j, ui-1j, uij+1, uij-1
+                # We need to insert 5 non-zero values into A:
+                # u_i,j, u_i+1,j, u_i-1,j, u_i,j+1, u_i,j-1
 
-                #uij
+                # u_i,j
                 idx_Ai.insert(idx, p)
                 idx_Aj.insert(idx, p)
-                a_ij.insert(idx, -2*(param.hi**2+param.hj**2))
+                a_ij.insert(idx, -(2*alpha_i + 2*alpha_j))
                 idx = idx + 1
 
-                #ui+1j
+                # u_i+1,j
                 idx_Ai.insert(idx, p)
                 idx_Aj.insert(idx, p + 1)
-                a_ij.insert(idx, param.hj**2)
+                a_ij.insert(idx, alpha_i)
                 idx = idx + 1
 
-                #ui-1j
+                # u_i-1,j
                 idx_Ai.insert(idx, p)
                 idx_Aj.insert(idx, p - 1)
-                a_ij.insert(idx, param.hj**2)
+                a_ij.insert(idx, alpha_i)
                 idx = idx + 1
 
-                #uij+1, we move forward a col of the matrix
+                # u_i,j+1, we move forward a col of the matrix
                 idx_Ai.insert(idx, p)
                 idx_Aj.insert(idx, p + (ni + 2))
-                a_ij.insert(idx, param.hi**2)
+                a_ij.insert(idx, alpha_j)
                 idx = idx + 1
 
-                #uij-1, we move back a col of the matrix
+                # u_i,j-1, we move back a col of the matrix
                 idx_Ai.insert(idx, p)
                 idx_Aj.insert(idx, p - (ni + 2))
-                a_ij.insert(idx, param.hi**2)
+                a_ij.insert(idx, alpha_j)
                 idx = idx + 1
-                
 
             else: # we do not have to in-paint this pixel -> we impose u = f
 
@@ -155,12 +145,10 @@ def laplace_equation(f, mask, param):
                 b[p - 1] = f_ext[i, j]
                 idx = idx + 1
 
-
     idx_Ai_c = [i - 1 for i in idx_Ai]
     idx_Aj_c = [i - 1 for i in idx_Aj]
 
-    # COMPLETE THE CODE (fill out the interrogation marks ???)
-    A = sparse(idx_Ai_c, idx_Aj_c, a_ij, ni_ext, nj_ext)
+    A = sparse(idx_Ai_c, idx_Aj_c, a_ij, nPixels, nPixels)
     x = spsolve(A, b)
 
     u_ext = np.reshape(x,(ni+2, nj+2), order='F')
