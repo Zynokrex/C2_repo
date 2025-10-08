@@ -39,5 +39,6 @@ cv2.imwrite(img_folder + "image7_mask_distance.jpg", mask_dist)
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
 mask_clean = cv2.morphologyEx(mask_dist, cv2.MORPH_CLOSE, kernel, iterations=1)
 
-mask_out_path = img_folder + "image7_mask.jpg"
-cv2.imwrite(str(mask_out_path), mask_clean)
+mask_out_path = img_folder + "image7_mask.tif"
+mask_3d = np.stack([mask_clean]*3, axis=-1)  # shape: (h, w, 3)
+cv2.imwrite(str(mask_out_path), mask_3d)
