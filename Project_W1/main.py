@@ -2,37 +2,49 @@ import cv2
 import numpy as np
 from dataclasses import dataclass
 import inpainting
+import os
+import argparse
 
 @dataclass
 class Parameters:
     hi: float
     hj: float
 
+# Choose the image name via CLI
+parser = argparse.ArgumentParser(description="Inpaint an image by name (e.g., image7).")
+parser.add_argument("--image", nargs="?", required=True)
+args = parser.parse_args()
+image_name = args.image
+
 # Folder with the images
 image_folder = 'images/'
-image_name = 'image1'
-# There are several black and white images to test inside the images folder:
-#  image1_to_restore.jpg
-#  image2_to_restore.jpg
-#  image3_to_restore.jpg
-#  image4_to_restore.jpg
-#  image5_to_restore.jpg
-#  image6_to_restore.tif
-#  image7_to_restore.jpg   # For this last one, the mask is not provided, so write a function to recover it
+results_folder = 'results/'
+os.makedirs(results_folder, exist_ok=True)
 
+# Helper to find an image trying different extensions
+def find_with_ext(base_path_wo_ext, exts):
+    for ext in exts:
+        path = base_path_wo_ext + ext
+        if os.path.exists(path):
+            return path
+    return None
 
-# Read an image to be restored
-full_image_path = image_folder + image_name + '_to_restore.jpg'
-im = cv2.imread(full_image_path, cv2.IMREAD_UNCHANGED)
+img_path = find_with_ext(
+    os.path.join(image_folder, image_name + '_to_restore'),
+    ['.png', '.tif', '.jpg']
+)
+mask_path = find_with_ext(
+    os.path.join(image_folder, image_name + '_mask'),
+    ['.png', '.tif', '.jpg']
+)
+
+# Read the image to be restored
+im = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 
 # Print image dimensions
 print('Image Dimensions : ', im.shape)
 print('Image Height     : ', im.shape[0])
 print('Image Width      : ', im.shape[1])
-
-# Show image
-cv2.imshow('Original image', im)
-cv2.waitKey(0)
 
 # Normalize values into [0,1]
 min_val = np.min(im)
@@ -40,18 +52,12 @@ max_val = np.max(im)
 im = (im.astype('float') - min_val)
 im = im / max_val
 
-# Show normalized image
-cv2.imshow('Normalized image', im)
-cv2.waitKey(0)
-
 # Load the mask image
-full_mask_path = image_folder + image_name + '_mask.jpg'
-mask_img = cv2.imread(full_mask_path, cv2.IMREAD_UNCHANGED)
-# From the mask image we define a binary mask that "erases" the darker pixels from the original image
+mask_img = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+
+# From the mask image we define a binary mask that
+# "erases" the darker pixels from the original image
 mask = (mask_img > 128).astype('float')
-# mask[i,j] == 1 means we have lost information in that pixel
-# mask[i,j] == 0 means we have information in that pixel
-# We want to in-paint those areas in which mask == 1
 
 # Mask dimensions
 dims = mask.shape
@@ -61,72 +67,31 @@ print('Mask Dimension : ', dims)
 print('Mask Height    : ', ni)
 print('Mask Width     : ', nj)
 
-# Show the mask image and binarized mask
-cv2.imshow('Mask image', mask_img)
-cv2.waitKey(0)
-cv2.imshow('Binarized mask', mask)
-cv2.waitKey(0)
-
 # Parameters
 param = Parameters(0, 0)
-param.hi = 1 / (ni-1)
-param.hj = 1 / (nj-1)
+param.hi = 1 / (ni - 1)
+param.hj = 1 / (nj - 1)
 
-# Perform the in-painting
-u = inpainting.laplace_equation(im, mask, param)
+# Check whether the image is gray or color and apply the corresponding pipeline
+if im.ndim == 2:
+    # Grayscale
+    print('Processing a grayscale image')
+    u = inpainting.laplace_equation(im, mask, param)
+else:
+    # Color (process each channel separately)
+    print('Processing a color image')
+    if mask.ndim == 2:
+        # If mask is single-channel but image is multi-channel, replicate mask
+        mask = np.repeat(mask[:, :, None], im.shape[2], axis=2)
 
-# Show the final image
-cv2.imshow('In-painted image', u)
-cv2.waitKey(0)
+    u = np.zeros_like(im, dtype=float)
+    for c in range(im.shape[2]):
+        u[:, :, c] = inpainting.laplace_equation(im[:, :, c], mask[:, :, c], param)
 
-
-### Let us now try with a colored image (image6) ###
-
-del im, u, mask_img
-image_name = 'image6'
-full_image_path = image_folder + image_name + '_to_restore.tif'
-im = cv2.imread(full_image_path, cv2.IMREAD_UNCHANGED)
-
-# Normalize values into [0,1]
-min_val = np.min(im)
-max_val = np.max(im)
-im = (im.astype('float') - min_val)
-im = im / max_val
-
-# Show normalized image
-cv2.imshow('Normalized Image', im)
-cv2.waitKey(0)
-
-# Number of pixels for each dimension, and number of channels
-# height, width, number of channels in image
-ni = im.shape[0]
-nj = im.shape[1]
-nc = im.shape[2]
-
-# Load and show the (binarized) mask
-full_mask_path = image_folder + image_name + '_mask.tif'
-mask_img = cv2.imread(full_mask_path, cv2.IMREAD_UNCHANGED)
-mask = (mask_img > 128).astype('float')
-cv2.imshow('Binarized mask', mask)
-cv2.waitKey(0)
-
-# Parameters
-param = Parameters(0, 0)
-param.hi = 1 / (ni-1)
-param.hj = 1 / (nj-1)
-
-# Perform the in-painting for each channel separately
-u = np.zeros(im.shape, dtype=float)
-u[:, :, 0] = inpainting.laplace_equation(im[:, :, 0], mask[:, :, 0], param)
-u[:, :, 1] = inpainting.laplace_equation(im[:, :, 1], mask[:, :, 1], param)
-u[:, :, 2] = inpainting.laplace_equation(im[:, :, 2], mask[:, :, 2], param)
-
-# Show the final image
-cv2.imshow('In-painted image', u)
-cv2.waitKey(0)
-
-
-### Let us now try with a colored image (image7) without a mask image ###
-
-# Write your code to remove the red text overlayed on top of image7_to_restore.png
-# Hint: the undesired overlay is plain red, so it should be easy to extract the (binarized) mask from the image file
+# Save the inpainted image
+out_path = os.path.join(results_folder, f'{image_name}_inpainted.png')
+# Clip to [0,1] then scale to 8-bit for saving
+u_to_save = np.clip(u, 0, 1)
+u_to_save = (u_to_save * 255).astype(np.uint8)
+cv2.imwrite(out_path, u_to_save)
+print(f'Saved: {out_path}')
