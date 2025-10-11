@@ -52,3 +52,6 @@ Desktop.ini
 # Other
 *.log
 *.sqlite3
+
+# Images
+images/
