@@ -53,7 +53,7 @@ for channel in range(3):
     beta = beta_0 * (1 - mask)
 
     vi, vj = poisson_editing.composite_gradients(u1, f, mask)
-    b = 0 # CODE TO COMPLETE
+    b = beta * f + poisson_editing.divergence(vi, vj)
 
     u_final = 0 # CODE TO COMPLETE (e.g., using a scipy solver, or similar)
 
