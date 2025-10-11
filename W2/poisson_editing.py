@@ -25,9 +25,43 @@ def composite_gradients(u1: np.array, u2: np.array, mask: np.array):
     :return vj: composition of j components of gradients (horizontal component)
     """
 
-    # CODE TO COMPLETE
-    vi = 0
-    vj = 0
+    # Get forward gradients of u1 and u2
+    g1_i, g1_j = im_fwd_gradient(u1)
+    g2_i, g2_j = im_fwd_gradient(u2)
+
+    # Composite gradients using the mask
+    vi = mask * g1_i + (1 - mask) * g2_i
+    vj = mask * g1_j + (1 - mask) * g2_j
+
+    return vi, vj
+
+def composite_gradients_mixed(u1: np.array, u2: np.array, mask: np.array):
+    """
+    This function modifies the composite_gradients function to implement
+    the "mixed gradients" variant of Poisson editing.
+
+    Creates a vector field v by combining the forward gradient of u1 and u2.
+    For pixels where the mask is 1, the composite gradient v must coincide
+    with the gradient of u1 if its magnitude is larger than that of u2,
+    and vice versa. When mask is 0, the composite gradient v must coincide
+    with the gradient of u2.
+
+    :return vi: composition of i components of gradients (vertical component)
+    :return vj: composition of j components of gradients (horizontal component)
+    """
+
+    # Get forward gradients of u1 and u2
+    g1_i, g1_j = im_fwd_gradient(u1)
+    g2_i, g2_j = im_fwd_gradient(u2)
+
+    # Select the gradient with the largest magnitude
+    vi_in = np.where(np.abs(g2_i) > np.abs(g1_i), g2_i, g1_i)
+    vj_in = np.where(np.abs(g2_j) > np.abs(g1_j), g2_j, g1_j)
+
+    # Composite gradients using the mask. Use maximum gradient where mask is 1
+    vi = mask * vi_in + (1 - mask) * g2_i
+    vj = mask * vj_in + (1 - mask) * g2_j
+
     return vi, vj
 
 def poisson_linear_operator(u: np.array, beta: np.array):
