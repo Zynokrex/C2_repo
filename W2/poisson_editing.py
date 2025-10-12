@@ -1,4 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
+from scipy.signal import correlate2d
 
 def im_fwd_gradient(image: np.ndarray):
 
@@ -81,7 +83,7 @@ def divergence(vi: np.array, vj: np.array):
     """
     return im_bwd_divergence(vi, vj)
 
-def get_translation(original_img: np.ndarray, translated_img: np.ndarray, *part: str):
+def get_translation(source_img: np.ndarray, dst_img: np.ndarray, *part: str):
 
     # For the eyes mask:
     # The top left pixel of the source mask is located at (x=115, y=101)
@@ -93,14 +95,16 @@ def get_translation(original_img: np.ndarray, translated_img: np.ndarray, *part:
     # The top left pixel of the destination mask is located at (x=132, y=173)
     # This gives a translation vector of (dx=7, dy=33)
 
-    # The following shifts are hard coded:
+    corr = correlate2d(dst_img.sum(axis=2), source_img.sum(axis=2), mode='same', boundary="fill", fillvalue=0)
+    max_pos = np.unravel_index(np.argmax(corr), corr.shape)
+    center_y, center_x = np.array(corr.shape) // 2
+    dy = max_pos[0] - center_y
+    dx = max_pos[1] - center_x
     if part[0] == "eyes":
+        print("Difference between hardcoded and computed translation is Y:", np.abs(dy-24), "-- X:", np.abs(dx-8))
         return (24, 8)
     elif part[0] == "mouth":
+        print("Difference between hardcoded and computed translation is Y:", np.abs(dy-33), "-- X:", np.abs(dx-7))
         return (33, 7)
     else:
-        return (0, 0)
-
-    # Here on could determine the shift vector programmatically,
-    # given an original image/mask and its translated version.
-    # Idea: using maximal cross-correlation (e.g., scipy.signal.correlate2d), or similar.
+        return (dy, dx)
