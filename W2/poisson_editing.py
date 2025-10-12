@@ -75,6 +75,12 @@ def poisson_linear_operator(u: np.array, beta: np.array):
     Au = beta * u - lap_u
     return Au
 
+def divergence(vi: np.array, vj: np.array):
+    """
+    Tiny function to use poisson_editing.divergence(...) from main.py
+    """
+    return im_bwd_divergence(vi, vj)
+
 def get_translation(original_img: np.ndarray, translated_img: np.ndarray, *part: str):
 
     # For the eyes mask:
