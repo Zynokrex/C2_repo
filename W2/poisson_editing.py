@@ -1,10 +1,16 @@
 import numpy as np
 
+def row_fwd_grad(row: list):
+    #Np.where, if the elem indx is lower than the length-1, then np.roll(row,-1)-row, if it's like the length-1 then last so val=0
+    #np.roll, rolls the row backwards one item (row[1] becomes row[0]) so you can substract directly as we need to do ui+1,j - ui,j
+    return np.where(np.arange(len(row)) < len(row) - 1, np.roll(row, -1) - row, 0)
+
+
 def im_fwd_gradient(image: np.ndarray):
 
-    # CODE TO COMPLETE
-    grad_i = 0
-    grad_j = 0
+    grad_i = np.apply_along_axis(row_fwd_grad, 1, image) 
+    grad_j = np.apply_along_axis(row_fwd_grad, 1, image.T).T #el mateix que fer-ho per columnes
+
     return grad_i, grad_j
 
 def im_bwd_divergence(im1: np.ndarray, im2: np.ndarray):
