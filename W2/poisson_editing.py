@@ -8,12 +8,15 @@ def row_fwd_grad(row: list):
     return np.where(np.arange(len(row)) < len(row) - 1, np.roll(row, -1) - row, 0)
 
 
-def im_fwd_gradient(image: np.ndarray):
+def im_fwd_gradient(image: np.ndarray, notacio: str = "profe"):
 
     grad_i = np.apply_along_axis(row_fwd_grad, 1, image) 
     grad_j = np.apply_along_axis(row_fwd_grad, 1, image.T).T #el mateix que fer-ho per columnes
 
-    return grad_i, grad_j
+    if notacio=="profe":
+        return grad_i, grad_j
+    else: 
+        return grad_j, grad_i
 
 def im_bwd_divergence(im1: np.ndarray, im2: np.ndarray):
 
