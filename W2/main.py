@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import poisson_editing
+from scipy.sparse.linalg import LinearOperator, cg
 
 def shift_source(src, src_masks, translations, ni, nj, nChannels):
     translated_image = src.copy()
@@ -71,16 +72,28 @@ u_comb = np.zeros_like(dst) # combined image
 for channel in range(3):
 
     m = mask[:, :, channel]
-    u = u_comb[:, :, channel]
     f = dst[:, :, channel]
-    u1 = src[:, :, channel]
+    u1 = translated_image[:, :, channel]
 
     beta_0 = 1   # TRY CHANGING
-    beta = beta_0 * (1 - mask)
+    beta = beta_0 * (1 - m)
 
-    vi, vj = poisson_editing.composite_gradients(u1, f, mask)
+    vi, vj = poisson_editing.composite_gradients(u1, f, m)
     b = beta * f + poisson_editing.divergence(vi, vj)
+    
+    ni, nj = f.shape
+    def matvec(x):
+        u_img = x.reshape(ni, nj)
+        Au = poisson_editing.poisson_linear_operator(u_img, beta)
+        return Au.ravel()
+    
+    A = LinearOperator((ni*nj, ni*nj), matvec=matvec, dtype=np.float64)
 
-    u_final = 0 # CODE TO COMPLETE (e.g., using a scipy solver, or similar)
+    x0 = f.ravel()
+    x, info = cg(A, b.ravel(), x0=x0, atol=1e-6, maxiter=800)
 
-cv2.imshow('Final result of Poisson blending', u_final)
+    u_comb[:, :, channel] = x.reshape(ni, nj)
+
+u_final = np.clip(u_comb, 0, 255).astype(np.uint8)
+
+cv2.imshow('Final result of Poisson blending', u_final); cv2.waitKey(0)
