@@ -69,8 +69,10 @@ def poisson_linear_operator(u: np.array, beta: np.array):
     Implements the action of the matrix A in the quadratic energy associated
     to the Poisson editing problem.
     """
-    Au = 0
-    # CODE TO COMPLETE
+    grad_i, grad_j = im_fwd_gradient(u)
+    lap_u = im_bwd_divergence(grad_i, grad_j)
+
+    Au = beta * u - lap_u
     return Au
 
 def get_translation(original_img: np.ndarray, translated_img: np.ndarray, *part: str):
