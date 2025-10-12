@@ -97,9 +97,8 @@ def get_translation(source_img: np.ndarray, dst_img: np.ndarray, *part: str):
 
     corr = correlate2d(dst_img.sum(axis=2), source_img.sum(axis=2), mode='same', boundary="fill", fillvalue=0)
     max_pos = np.unravel_index(np.argmax(corr), corr.shape)
-    center_y, center_x = np.array(corr.shape) // 2
-    dy = max_pos[0] - center_y
-    dx = max_pos[1] - center_x
+    dy = max_pos[0] - corr.shape[0] // 2
+    dx = max_pos[1] - corr.shape[1] // 2
     if part[0] == "eyes":
         print("Difference between hardcoded and computed translation is Y:", np.abs(dy-24), "-- X:", np.abs(dx-8))
         return (24, 8)
