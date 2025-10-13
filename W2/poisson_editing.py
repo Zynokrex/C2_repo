@@ -5,7 +5,8 @@ from scipy.signal import correlate2d
 def row_fwd_grad(row: list):
     #Np.where, if the elem indx is lower than the length-1, then np.roll(row,-1)-row, if it's like the length-1 then last so val=0
     #np.roll, rolls the row backwards one item (row[1] becomes row[0]) so you can substract directly as we need to do ui+1,j - ui,j
-    return np.where(np.arange(len(row)) < len(row) - 1, np.roll(row, -1) - row, 0)
+    row_len = len(row)
+    return np.where(np.arange(row_len) < row_len - 1, np.roll(row, -1) - row, 0)
 
 
 def im_fwd_gradient(image: np.ndarray, notacio: str = "profe"):
@@ -18,11 +19,20 @@ def im_fwd_gradient(image: np.ndarray, notacio: str = "profe"):
     else: 
         return grad_j, grad_i
 
+def divergence_partial(row: list):
+    row_len = len(row)
+    #Si es el primer element, ui,j, si esta entre el primer i l'ultim ui,j-ui-1,j (roll 1 posicio endvant es com restar l'anterior)
+    #si es l'ultim es posa -ui-1,j
+    
+    div_parcial = np.where(np.arange(row_len)<1, row,
+                            np.where(np.arange(row_len) < row_len - 1, row-np.roll(row,1), -np.roll(row,1)))
+    return div_parcial
+
 def im_bwd_divergence(im1: np.ndarray, im2: np.ndarray):
 
     # CODE TO COMPLETE
-    div_i = 0
-    div_j = 0
+    div_i = np.apply_along_axis(divergence_partial, 1, im1)
+    div_j = np.apply_along_axis(divergence_partial, 1, im2.T).T
     return div_i + div_j
 
 def composite_gradients(u1: np.array, u2: np.array, mask: np.array):
