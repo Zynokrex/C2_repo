@@ -79,7 +79,7 @@ for channel in range(3):
     beta = beta_0 * (1 - m)
 
     vi, vj = poisson_editing.composite_gradients(u1, f, m)
-    b = beta * f + poisson_editing.divergence(vi, vj)
+    b = beta * f - poisson_editing.divergence(vi, vj)
     
     ni, nj = f.shape
     def matvec(x):
