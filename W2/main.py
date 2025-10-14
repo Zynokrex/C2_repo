@@ -3,7 +3,7 @@ import numpy as np
 import poisson_editing
 from scipy.sparse.linalg import LinearOperator, cg
 
-def shift_source(src, src_masks, translations, ni, nj, nChannels):
+def shift_source(src, src_masks, translations, ni, nj, nChannels, padding=5):
     translated_image = src.copy()
     for t, src_mask in zip(translations, src_masks):
         dy, dx = t
@@ -12,17 +12,37 @@ def shift_source(src, src_masks, translations, ni, nj, nChannels):
 
             # Find indices (points) where the mask is active
             indices = np.where(mask_channel != 0)
-            shifted_i = indices[0] + dy
-            shifted_j = indices[1] + dx
+            if indices[0].size == 0:
+                continue
+
+            i_min, i_max = indices[0].min(), indices[0].max()
+            j_min, j_max = indices[1].min(), indices[1].max()
+
+            top    = max(0, i_min - padding)
+            bottom = min(ni, i_max + 1 + padding)   # +1: inclusive -> exclusive
+            left   = max(0, j_min - padding)
+            right  = min(nj, j_max + 1 + padding)
+
+            # Build full rectangular grid of the crop region
+            rect_i = np.arange(top, bottom, dtype=np.int32)
+            rect_j = np.arange(left, right, dtype=np.int32)
+            grid_i, grid_j = np.meshgrid(rect_i, rect_j, indexing='ij')
+
+            # Shifted positions
+            shifted_i = grid_i + dy
+            shifted_j = grid_j + dx
 
             # Only keep indices inside image bounds
             valid = (shifted_i >= 0) & (shifted_i < ni) & (shifted_j >= 0) & (shifted_j < nj)
-            translated_image[shifted_i[valid], shifted_j[valid], c] = src[indices[0][valid], indices[1][valid], c]
+
+            # Paste the rectangular crop (including padding/context)
+            translated_image[shifted_i[valid], shifted_j[valid], c] = src[grid_i[valid], grid_j[valid], c]
     return translated_image
 
+
 # Load images
-src = cv2.imread('images/lena/girl.png')
-dst = cv2.imread('images/lena/lena.png')
+src = cv2.imread('images/lena/girl.png').astype(np.float64)
+dst = cv2.imread('images/lena/lena.png').astype(np.float64)
 # For Mona Lisa and Ginevra:
 # src = cv2.imread('images/monalisa/ginevra.png')
 # dst = cv2.imread('images/monalisa/monalisa.png')
