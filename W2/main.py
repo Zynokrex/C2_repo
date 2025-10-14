@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import preprocess
 import poisson_editing
@@ -13,6 +14,10 @@ def main():
                         help='Choose which image to blend: lena or monalisa')
     parser.add_argument('--display', action='store_true', default=False,
                         help='Display images during preprocessing (default: do not display)')
+    parser.add_argument('--gradients', choices=['default', 'mixed'], default='default',
+                        help='Gradient composition method')
+    parser.add_argument('--savefinal', action='store_true', default=False,
+                    help='Save final blended image to images/outputs/')
     args = parser.parse_args()
 
     if args.image == 'lena':
@@ -32,7 +37,13 @@ def main():
         beta_0 = 1   # TRY CHANGING
         beta = beta_0 * (1 - m)
 
-        vi, vj = poisson_editing.composite_gradients(u1, f, m)
+        if args.gradients == 'default':
+            vi, vj = poisson_editing.composite_gradients(u1, f, m)
+        elif args.gradients == 'mixed':
+            vi, vj = poisson_editing.composite_gradients_mixed(u1, f, m)
+        else:
+            raise ValueError("Invalid gradient method")
+
         b = beta * f - poisson_editing.divergence(vi, vj)
         
         ni, nj = f.shape
@@ -52,6 +63,13 @@ def main():
 
     cv2.imshow('Final result of Poisson blending', u_final)
     cv2.waitKey(0)
+
+    if args.savefinal:
+        output_dir = "images/outputs"
+        os.makedirs(output_dir, exist_ok=True)
+        filename = os.path.join(output_dir, f"{args.image}_result.png")
+        cv2.imwrite(filename, u_final)
+        print(f"Saved final image to {filename}")
 
 if __name__ == "__main__":
     main()
