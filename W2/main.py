@@ -10,7 +10,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 
 def main():
     parser = argparse.ArgumentParser(description="Poisson blending: choose Lena or Monalisa.")
-    parser.add_argument('--image', choices=['lena', 'monalisa', 'fire', 'book', 'writing'], default='lena',
+    parser.add_argument('--image', choices=['lena', 'monalisa', 'fire', 'book', 'writing', 'euro'], default='lena',
                         help='Choose which image to blend: lena or monalisa')
     parser.add_argument('--display', action='store_true', default=False,
                         help='Display images during preprocessing (default: do not display)')
@@ -30,6 +30,8 @@ def main():
         dst, mask, translated_image = preprocess.get_book(display_images=args.display)
     elif args.image == 'writing':
         dst, mask, translated_image = preprocess.get_writing(display_images=args.display)
+    elif args.image == 'euro':
+        dst, mask, translated_image = preprocess.get_euro(display_images=args.display)
     else:
         raise ValueError("Invalid image choice.")
 
