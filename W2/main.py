@@ -11,12 +11,14 @@ def main():
     parser = argparse.ArgumentParser(description="Poisson blending: choose Lena or Monalisa.")
     parser.add_argument('--image', choices=['lena', 'monalisa'], default='lena',
                         help='Choose which image to blend: lena or monalisa')
+    parser.add_argument('--display', action='store_true', default=False,
+                        help='Display images during preprocessing (default: do not display)')
     args = parser.parse_args()
 
     if args.image == 'lena':
-        dst, mask, translated_image = preprocess.get_lena(display_images=True)
+        dst, mask, translated_image = preprocess.get_lena(display_images=args.display)
     elif args.image == 'monalisa':
-        dst, mask, translated_image = preprocess.get_monalisa(display_images=True)
+        dst, mask, translated_image = preprocess.get_monalisa(display_images=args.display)
     else:
         raise ValueError("Invalid image choice. Use 'lena' or 'monalisa'.")
 
