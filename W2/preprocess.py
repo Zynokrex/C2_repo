@@ -202,3 +202,40 @@ def get_book(display_images = False):
         cv2.imshow('Combined image just by copying', np.clip(u_comb, 0, 255).astype(np.uint8)); cv2.waitKey(0)
 
     return dst, mask, src
+
+
+def get_writing(display_images = False):
+    """
+    Function to load the images and masks for the book example.
+    """
+    # Load images
+    src = cv2.imread('images/writing/writing.png').astype(np.float64)
+    dst = cv2.imread('images/writing/book.png').astype(np.float64)
+
+    # Store shapes and number of channels (src, dst and mask should have same dimensions!)
+    _, _, nChannels = dst.shape
+
+    # Display the images
+    if display_images:
+        cv2.imshow('Source image', np.clip(src, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+        cv2.imshow('Destination image', np.clip(dst, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+
+    # Load masks for eye swapping
+    src_dst_mask = cv2.imread('images/writing/mask.png', cv2.IMREAD_COLOR)
+    if display_images:
+        cv2.imshow('Source and destination mask', np.clip(src_dst_mask, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+
+    # Since translation is (0,0) we do not need to call shift_source, we use src instead of translated_image
+    u_comb = dst.copy()
+    mask = np.zeros_like(dst) # combined mask
+    # Blend with the original (destination) image
+    for dst_mask in [src_dst_mask]:
+        for c in range(nChannels):
+            mask_channel = dst_mask[:, :, c] // 255  # Convert to binary mask
+            mask[:, :, c] = np.where(mask_channel != 0, 1, mask[:, :, c])
+            u_comb[:, :, c] = np.where(mask_channel != 0, src[:, :, c], u_comb[:, :, c])
+
+    if display_images:
+        cv2.imshow('Combined image just by copying', np.clip(u_comb, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+
+    return dst, mask, src
