@@ -10,7 +10,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 
 def main():
     parser = argparse.ArgumentParser(description="Poisson blending: choose Lena or Monalisa.")
-    parser.add_argument('--image', choices=['lena', 'monalisa'], default='lena',
+    parser.add_argument('--image', choices=['lena', 'monalisa', 'fire'], default='lena',
                         help='Choose which image to blend: lena or monalisa')
     parser.add_argument('--display', action='store_true', default=False,
                         help='Display images during preprocessing (default: do not display)')
@@ -24,8 +24,10 @@ def main():
         dst, mask, translated_image = preprocess.get_lena(display_images=args.display)
     elif args.image == 'monalisa':
         dst, mask, translated_image = preprocess.get_monalisa(display_images=args.display)
+    elif args.image == 'fire':
+        dst, mask, translated_image = preprocess.get_fire(display_images=args.display)
     else:
-        raise ValueError("Invalid image choice. Use 'lena' or 'monalisa'.")
+        raise ValueError("Invalid image choice.")
 
     u_comb = np.zeros_like(dst) # combined image
 
@@ -67,7 +69,7 @@ def main():
     if args.savefinal:
         output_dir = "images/outputs"
         os.makedirs(output_dir, exist_ok=True)
-        filename = os.path.join(output_dir, f"{args.image}_result.png")
+        filename = os.path.join(output_dir, f"{args.image}_result_{args.gradients}.png")
         cv2.imwrite(filename, u_final)
         print(f"Saved final image to {filename}")
 
