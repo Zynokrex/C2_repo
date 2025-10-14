@@ -53,20 +53,20 @@ dst = cv2.imread('images/lena/lena.png').astype(np.float64)
 ni, nj, nChannels = dst.shape
 
 # Display the images
-cv2.imshow('Source image', src); cv2.waitKey(0)
-cv2.imshow('Destination image', dst); cv2.waitKey(0)
+cv2.imshow('Source image', np.clip(src, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+cv2.imshow('Destination image', np.clip(dst, 0, 255).astype(np.uint8)); cv2.waitKey(0)
 
 # Load masks for eye swapping
 src_mask_eyes = cv2.imread('images/lena/mask_src_eyes.png', cv2.IMREAD_COLOR)
 dst_mask_eyes = cv2.imread('images/lena/mask_dst_eyes.png', cv2.IMREAD_COLOR)
-cv2.imshow('Eyes source mask', src_mask_eyes); cv2.waitKey(0)
-cv2.imshow('Eyes destination mask', dst_mask_eyes); cv2.waitKey(0)
+cv2.imshow('Eyes source mask', np.clip(src_mask_eyes, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+cv2.imshow('Eyes destination mask', np.clip(dst_mask_eyes, 0, 255).astype(np.uint8)); cv2.waitKey(0)
 
 # Load masks for mouth swapping
 src_mask_mouth = cv2.imread('images/lena/mask_src_mouth.png', cv2.IMREAD_COLOR)
 dst_mask_mouth = cv2.imread('images/lena/mask_dst_mouth.png', cv2.IMREAD_COLOR)
-cv2.imshow('Mouth source mask', src_mask_mouth); cv2.waitKey(0)
-cv2.imshow('Mouth destination mask', dst_mask_mouth); cv2.waitKey(0)
+cv2.imshow('Mouth source mask', np.clip(src_mask_mouth, 0, 255).astype(np.uint8)); cv2.waitKey(0)
+cv2.imshow('Mouth destination mask', np.clip(dst_mask_mouth, 0, 255).astype(np.uint8)); cv2.waitKey(0)
 
 # Get the translation vectors (hard coded)
 t_eyes = poisson_editing.get_translation(src_mask_eyes, dst_mask_eyes, "eyes")
@@ -75,7 +75,7 @@ t_mouth = poisson_editing.get_translation(src_mask_mouth, dst_mask_mouth, "mouth
 translations = [t_eyes, t_mouth]
 src_masks = [src_mask_eyes, src_mask_mouth]
 translated_image = shift_source(src, src_masks, translations, ni, nj, nChannels)
-cv2.imshow('Source image after shifting', translated_image); cv2.waitKey(0)
+cv2.imshow('Source image after shifting', np.clip(translated_image, 0, 255).astype(np.uint8)); cv2.waitKey(0)
 
 u_comb = dst.copy()
 mask = np.zeros_like(dst) # combined mask
@@ -85,7 +85,7 @@ for dst_mask in [dst_mask_eyes, dst_mask_mouth]:
         mask_channel = dst_mask[:, :, c] // 255  # Convert to binary mask
         mask[:, :, c] = np.where(mask_channel != 0, 1, mask[:, :, c])
         u_comb[:, :, c] = np.where(mask_channel != 0, translated_image[:, :, c], u_comb[:, :, c])
-cv2.imshow('Blended image before Poisson editing', u_comb); cv2.waitKey(0)
+cv2.imshow('Blended image before Poisson editing', np.clip(u_comb, 0, 255).astype(np.uint8)); cv2.waitKey(0)
 
 u_comb = np.zeros_like(dst) # combined image
 
