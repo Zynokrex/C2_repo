@@ -16,6 +16,7 @@ def main():
                         help='Display images during preprocessing (default: do not display)')
     parser.add_argument('--gradients', choices=['default', 'mixed'], default='default',
                         help='Gradient composition method')
+    parser.add_argument('--beta0', type=float, default=1.0)
     parser.add_argument('--savefinal', action='store_true', default=False,
                     help='Save final blended image to images/outputs/')
     args = parser.parse_args()
@@ -44,7 +45,7 @@ def main():
         f = dst[:, :, channel]
         u1 = translated_image[:, :, channel]
 
-        beta_0 = 1   # TRY CHANGING
+        beta_0 = args.beta0   # TRY CHANGING
         beta = beta_0 * (1 - m)
 
         if args.gradients == 'default':
@@ -77,7 +78,7 @@ def main():
     if args.savefinal:
         output_dir = "images/outputs"
         os.makedirs(output_dir, exist_ok=True)
-        filename = os.path.join(output_dir, f"{args.image}_result_{args.gradients}.png")
+        filename = os.path.join(output_dir, f"{args.image}_result_{args.gradients}_{args.beta0}.png")
         cv2.imwrite(filename, u_final)
         print(f"Saved final image to {filename}")
 
