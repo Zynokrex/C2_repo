@@ -1,10 +1,14 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+from utils import initialize_phi, update_brightness, update_phi, calculate_difference
 
-folderInput = 'images/'
+# ================================
+# Input image
+# ================================
+folder_input = 'images/'
 figure_name = 'circles.png'
-figure_name_final = folderInput + figure_name
-img = cv2.imread(figure_name_final, cv2.IMREAD_UNCHANGED)
+img = cv2.imread(folder_input + figure_name, cv2.IMREAD_UNCHANGED)
 img = img.astype('float')
 
 # Visualize the grayscale image
@@ -13,50 +17,67 @@ cv2.imshow('Image', img); cv2.waitKey(0)
 # Normalize image
 img = (img.astype('float') - np.min(img))
 img = img/np.max(img)
-cv2.imshow('Normalized image',I)
+cv2.imshow('Normalized image', img)
 cv2.waitKey(0)
 
-# Height and width
-ni = img.shape[0]
-nj = img.shape[1]
-
-# Make color images grayscale. Skip this block if you handle the multi-channel Chan-Sandberg-Vese model
+# Make color images grayscale
+# Skip this block if you handle the multi-channel Chan-Sandberg-Vese model
 if len(img.shape) > 2:
     nc = img.shape[2] # number of channels
     img = np.mean(img, axis=2)
 
-# Try out different parameters
+# ================================
+# Parameters
+# ================================
 mu = 1
 nu = 1
 lambda1 = 1
 lambda2 = 1
 tol = 0.1
 dt = (1e-2)/mu
-iterMax = 1e5
+iterMax = int(1e5)
 
-X, Y = np.meshgrid(np.arange(0, nj), np.arange(0, ni), indexing='xy')
+# ================================
+# Phi initialization
+# ================================
 
-# Initial phi
-# This initialization allows a faster convergence for phantom2
-phi = (-np.sqrt((X - np.round(ni / 2)) ** 2 + (Y - np.round(nj / 2)) ** 2) + 50)
-# Alternatively, you may initialize randomly, or use the checkerboard pattern as suggested in Getreuer's paper
+phi = initialize_phi(img.shape, method='checkerboard')
 
-# Normalization of the initial phi to the range [-1, 1]
-min_val = np.min(phi)
-max_val = np.max(phi)
-phi = phi - min_val
-phi = 2 * phi / max_val
-phi = phi - 1
+# Check initial phi
+plt.figure(figsize=(5,4))
+plt.imshow(phi, cmap='jet')
+plt.colorbar(label=f'$\phi$ value')
+plt.title('Initial level set $\phi$')
+plt.show()
+
+# ================================
+# Main loop
+# ================================
 
 # CODE TO COMPLETE
 # Explicit gradient descent or Semi-explicit (Gauss-Seidel) gradient descent (Bonus)
 # Extra: Implement the Chan-Sandberg-Vese model (for colored images)
 # Refer to Getreuer's paper (2012)
 
-# Segmented image
-seg = np.zeros(shape=img.shape)
+for it in range(iterMax):
 
-# CODE TO COMPLETE
+    # Save previous phi
+    phi_old = phi.copy()
+
+    # Update brightness levels c1 and c2 with phi fixed
+    c1, c2 = update_brightness(img, phi)
+
+    # Update phi with c1 and c2 fixed
+    phi = update_phi(phi, c1, c2, img, mu, nu, lambda1, lambda2, dt)
+
+    # Check for convergence
+    diff = calculate_difference(phi, phi_old)
+    if diff <= tol:
+        print(f'Converged in {it} iterations.')
+        break
+
+# Segmented image 
+seg = (phi >= 0).astype(np.uint8)*255
 
 # Show output image
 cv2.imshow('Segmented image', seg); cv2.waitKey(0)
