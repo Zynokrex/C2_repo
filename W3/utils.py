@@ -22,11 +22,29 @@ def initialize_phi(shape, method='checkerboard', seed=42):
 
     return phi
 
+def heavyside(phi, epsilon=1):
+    """
+    Smoother heavyside function
+    Args:
+        phi: input
+        epsilon: smoothing parameter
 
-def update_brightness(img, phi):
+    """
+    return 0.5 * (1 + (2 / np.pi) * np.arctan(phi / epsilon))
 
-    c1 = 0
-    c2 = 0
+def update_brightness(img, phi, epsilon):
+    """
+    Compute the average brightness values inside and outside a contour.
+
+    Args:
+        img: input image
+        phi: level set function
+        epsilon: smoothing parameter
+    """
+    H_phi = heavyside(phi, epsilon)
+
+    c1 = np.sum(H_phi * img) / np.sum(H_phi)
+    c2 = np.sum((1 - H_phi) * img) / np.sum(1 - H_phi)
 
     return c1, c2
 
