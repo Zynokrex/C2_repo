@@ -50,6 +50,17 @@ def update_brightness(img, phi, epsilon):
 
 
 def update_exterior(phi):
+    """
+    Enforce Neumann boundary conditions by duplicating
+    pixels near the borders.
+
+    Args:
+        phi: level set function
+    """
+    phi[0, :]   = phi[1, :]     # Top boundary
+    phi[-1, :]  = phi[-2, :]    # Bottom boundary
+    phi[:, 0]   = phi[:, 1]     # Left boundary
+    phi[:, -1]  = phi[:, -2]    # Right boundary
 
     return phi
 
