@@ -35,7 +35,7 @@ eta = 10e-8
 lambda1 = 1
 lambda2 = 1
 tol = 10e-3
-dt = (1e-2)/mu
+dt = 0.5
 iterMax = int(1e5)
 
 # ================================
