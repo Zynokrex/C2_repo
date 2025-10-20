@@ -29,11 +29,12 @@ if len(img.shape) > 2:
 # ================================
 # Parameters
 # ================================
-mu = 1
-nu = 1
+mu = 0.2
+nu = 0
+eta = 10e-8
 lambda1 = 1
 lambda2 = 1
-tol = 0.1
+tol = 10e-3
 dt = (1e-2)/mu
 iterMax = int(1e5)
 
@@ -68,10 +69,11 @@ for it in range(iterMax):
     c1, c2 = update_brightness(img, phi)
 
     # Update phi with c1 and c2 fixed
-    phi = update_phi(phi, c1, c2, img, mu, nu, lambda1, lambda2, dt)
+    phi = update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt)
 
     # Check for convergence
     diff = calculate_difference(phi, phi_old)
+    print(diff)
     if diff <= tol:
         print(f'Converged in {it} iterations.')
         break
@@ -80,4 +82,5 @@ for it in range(iterMax):
 seg = (phi >= 0).astype(np.uint8)*255
 
 # Show output image
-cv2.imshow('Segmented image', seg); cv2.waitKey(0)
+cv2.imshow('Segmented image', seg); 
+cv2.waitKey(0)

@@ -32,7 +32,10 @@ def heavyside(phi, epsilon=1):
     """
     return 0.5 * (1 + (2 / np.pi) * np.arctan(phi / epsilon))
 
-def update_brightness(img, phi, epsilon):
+def dirac(t, epsilon=1):
+    return epsilon / (np.pi * (np.pow(epsilon, 2) + np.pow(t, 2)))
+
+def update_brightness(img, phi, epsilon=1):
     """
     Compute the average brightness values inside and outside a contour.
 
@@ -65,24 +68,76 @@ def update_exterior(phi):
     return phi
 
 
-def update_interior(phi, c1, c2, img, mu, nu, lambda1, lambda2, dt):
+def update_interior(phi_n, phi_np1, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=1):
+    rows, cols = phi_n.shape
 
-    return phi
+    # Gauss-Seidel sweep: iterate from left-to-right, top-to-bottom
+    # We loop over the inner region
+    for i in range(1, rows - 1): # Exclude first and last row
+        for j in range(1, cols - 1): # Exclude first and last column
+            
+            # --- Calculate A and B coefficients for the current point ---
+            A_ij = calculate_A_at_point(phi_n, phi_np1, mu, eta, i, j)
+            B_ij = calculate_B_at_point(phi_n, phi_np1, mu, eta, i, j)
+            
+            # --- Get A and B values from neighbors ---
+            A_prev_i_j = calculate_A_at_point(phi_n, phi_np1, mu, eta, i-1, j)
+            B_i_prev_j = calculate_B_at_point(phi_n, phi_np1, mu, eta, i, j-1)
+            
+            # Get f_i,j from image data
+            f_ij = img[i, j]
 
+            # Calculate delta_epsilon(phi_i,j^n)
+            delta_val = dirac(phi_n[i, j], epsilon)
 
-def update_phi(phi, c1, c2, img, mu, nu, lambda1, lambda2, dt):
+            # --- Numerator terms ---
+            term1 = phi_n[i, j]
+            
+            term2_coeff = dt * delta_val
+            
+            term3 = (A_ij * phi_n[i, j] + 
+                                  A_prev_i_j * phi_np1[i-1, j] + 
+                                  B_ij * phi_n[i, j] + 
+                                  B_i_prev_j * phi_np1[i, j-1])
+            
+            # Region fitting terms.  
+            region_fitting_term = - nu  - lambda1 * (f_ij - c1)**2 + lambda2 * (f_ij - c2)**2
+
+            numerator_bracket = term3 + region_fitting_term
+            
+            numerator = term1 + term2_coeff * numerator_bracket
+
+            # --- Denominator terms ---
+            denominator_sum = (1 + dt * delta_val * (A_ij + A_prev_i_j + B_ij + B_i_prev_j))
+            
+            # Update phi_np1 at (i,j)
+            phi_np1[i, j] = numerator / denominator_sum
+            
+    return phi_np1
+
+def update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=1):
 
     # Update countours (mirror)
     phi = update_exterior(phi)
 
     # Update interior with Gauss-Seidel
-    phi = update_interior(phi, c1, c2, img, mu, nu, lambda1, lambda2, dt)
+    phi = update_interior(phi_old, phi, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon)
 
     return phi
 
 
 def calculate_difference(phi, phi_old):
 
-    diff = 0
+    diff = phi - phi_old
+    l2_norm_diff = np.linalg.norm(diff)
 
-    return diff
+    return l2_norm_diff
+
+def calculate_A_at_point(phi_n, phi_np1, mu, eta, i, j): 
+    denominator = np.pow(eta, 2) + np.pow((phi_n[i+1,j] - phi_n[i,j]), 2) + np.pow(((phi_n[i,j+1] - phi_np1[i,j-1])/2), 2) 
+    return mu / np.sqrt(denominator)
+
+def calculate_B_at_point(phi_n, phi_np1, mu, eta, i, j): 
+    denominator = np.pow(eta, 2) + np.pow(((phi_n[i+1,j] - phi_np1[i-1,j])/2), 2) + np.pow((phi_n[i,j] - phi_n[i+1,j]), 2) 
+    return mu / np.sqrt(denominator)
+
