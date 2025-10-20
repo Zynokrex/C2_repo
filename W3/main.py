@@ -31,7 +31,7 @@ if len(img.shape) > 2:
 # ================================
 mu = 0.2
 nu = 0
-eta = 10e-8
+eta = 1e-8
 lambda1 = 1
 lambda2 = 1
 tol = 10e-3
