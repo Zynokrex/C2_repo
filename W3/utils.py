@@ -95,9 +95,9 @@ def update_interior(phi_n, phi_np1, c1, c2, img, mu, nu, eta, lambda1, lambda2, 
             
             term2_coeff = dt * delta_val
             
-            term3 = (A_ij * phi_n[i, j] + 
+            term3 = (A_ij * phi_n[i+1, j] + 
                                   A_prev_i_j * phi_np1[i-1, j] + 
-                                  B_ij * phi_n[i, j] + 
+                                  B_ij * phi_n[i, j+1] + 
                                   B_i_prev_j * phi_np1[i, j-1])
             
             # Region fitting terms.  
@@ -119,6 +119,7 @@ def update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, eps
 
     # Update countours (mirror)
     phi = update_exterior(phi)
+    phi_old = update_exterior(phi_old)
 
     # Update interior with Gauss-Seidel
     phi = update_interior(phi_old, phi, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon)
