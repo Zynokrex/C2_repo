@@ -68,7 +68,12 @@ def update_exterior(phi):
     return phi
 
 
-def update_interior(phi_n, phi_np1, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=1):
+def update_interior(phi_n, phi_np1, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=1, color="Gray"):
+    """
+    color: Can be Gray for grayscale img or Colored for imgs with more than 2 channels
+    """
+    #We add an argument to see if we will use Colored or Grayscale images
+
     rows, cols = phi_n.shape
 
     # Gauss-Seidel sweep: iterate from left-to-right, top-to-bottom
@@ -100,8 +105,12 @@ def update_interior(phi_n, phi_np1, c1, c2, img, mu, nu, eta, lambda1, lambda2, 
                                   B_ij * phi_n[i, j+1] + 
                                   B_i_prev_j * phi_np1[i, j-1])
             
-            # Region fitting terms.  
-            region_fitting_term = - nu  - lambda1 * (f_ij - c1)**2 + lambda2 * (f_ij - c2)**2
+            # Region fitting terms. 
+            if color == "Gray": 
+                region_fitting_term = - nu  - lambda1 * (f_ij - c1)**2 + lambda2 * (f_ij - c2)**2
+            
+            elif color == "Colored":
+                region_fitting_term = - nu  - lambda1 * np.linalg.norm(f_ij - c1)**2 + lambda2 * np.linalg.norm(f_ij - c2)**2
 
             numerator_bracket = term3 + region_fitting_term
             
