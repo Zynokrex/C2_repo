@@ -6,7 +6,7 @@ def initialize_phi(shape, method='checkerboard', seed=42, color="Gray"):
         ni, nj = shape
     else:
         ni, nj = shape[0], shape[1]
-        
+
     Y, X = np.meshgrid(np.arange(ni), np.arange(nj), indexing='ij')
 
     # Initialize phi based on the selected method
@@ -56,12 +56,12 @@ def update_brightness(img, phi, epsilon=1, color="Gray"):
         c1 = np.zeros(img.shape[2])
         c2 = np.zeros(img.shape[2])
         for ch in range(img.shape[2]):
-            c1[ch] = np.sum(H_phi * img[:, :, ch]) / np.sum(H_phi)
-            c2[ch] = np.sum((1 - H_phi) * img[:, :, ch]) / np.sum(1 - H_phi)
+            c1[ch] = np.sum(H_phi * img[:, :, ch]) / (np.sum(H_phi) + 1e-8)
+            c2[ch] = np.sum((1 - H_phi) * img[:, :, ch]) / (np.sum(1 - H_phi) + 1e-8)
     else:
         # For grayscale images, compute scalar c1 and c2
-        c1 = np.sum(H_phi * img) / np.sum(H_phi)
-        c2 = np.sum((1 - H_phi) * img) / np.sum(1 - H_phi)
+        c1 = np.sum(H_phi * img) / (np.sum(H_phi) + 1e-8)
+        c2 = np.sum((1 - H_phi) * img) / (np.sum(1 - H_phi) + 1e-8)
 
     return c1, c2
 
