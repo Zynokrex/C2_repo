@@ -103,11 +103,6 @@ def main(args):
     cv2.imwrite(seg_path, seg)
     print(f"Saved segmented image to: {seg_path}")
 
-    # Save phi visualization
-    phi_path = os.path.join(results_folder, f'phi_{base_name}_{param_str}.png')
-    plt.imsave(phi_path, phi, cmap='jet')
-    print(f"Saved phi visualization to: {phi_path}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
