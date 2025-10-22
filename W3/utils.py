@@ -1,8 +1,12 @@
 import numpy as np
 
-def initialize_phi(shape, method='checkerboard', seed=42):
+def initialize_phi(shape, method='checkerboard', seed=42, color="Gray"):
 
-    ni, nj = shape
+    if color == "Gray":
+        ni, nj = shape
+    else:
+        ni, nj = shape[0], shape[1]
+        
     Y, X = np.meshgrid(np.arange(ni), np.arange(nj), indexing='ij')
 
     # Initialize phi based on the selected method
@@ -35,7 +39,7 @@ def heavyside(phi, epsilon=1):
 def dirac(t, epsilon=1):
     return epsilon / (np.pi * (np.pow(epsilon, 2) + np.pow(t, 2)))
 
-def update_brightness(img, phi, epsilon=1):
+def update_brightness(img, phi, epsilon=1, color="Gray"):
     """
     Compute the average brightness values inside and outside a contour.
 
@@ -43,11 +47,21 @@ def update_brightness(img, phi, epsilon=1):
         img: input image
         phi: level set function
         epsilon: smoothing parameter
+        color: "Gray" or "Colored"
     """
     H_phi = heavyside(phi, epsilon)
 
-    c1 = np.sum(H_phi * img) / np.sum(H_phi)
-    c2 = np.sum((1 - H_phi) * img) / np.sum(1 - H_phi)
+    if color == "Colored":
+        # For colored images, compute c1 and c2 for each channel
+        c1 = np.zeros(img.shape[2])
+        c2 = np.zeros(img.shape[2])
+        for ch in range(img.shape[2]):
+            c1[ch] = np.sum(H_phi * img[:, :, ch]) / np.sum(H_phi)
+            c2[ch] = np.sum((1 - H_phi) * img[:, :, ch]) / np.sum(1 - H_phi)
+    else:
+        # For grayscale images, compute scalar c1 and c2
+        c1 = np.sum(H_phi * img) / np.sum(H_phi)
+        c2 = np.sum((1 - H_phi) * img) / np.sum(1 - H_phi)
 
     return c1, c2
 
@@ -124,14 +138,14 @@ def update_interior(phi_n, phi_np1, c1, c2, img, mu, nu, eta, lambda1, lambda2, 
             
     return phi_np1
 
-def update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=1):
+def update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=1, color="Gray"):
 
     # Update countours (mirror)
     phi = update_exterior(phi)
     phi_old = update_exterior(phi_old)
 
     # Update interior with Gauss-Seidel
-    phi = update_interior(phi_old, phi, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon)
+    phi = update_interior(phi_old, phi, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon, color)
 
     return phi
 

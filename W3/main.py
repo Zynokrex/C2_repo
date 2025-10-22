@@ -7,7 +7,7 @@ from utils import initialize_phi, update_brightness, update_phi, calculate_diffe
 # Input image
 # ================================
 folder_input = 'images/'
-figure_name = 'circles.png'
+figure_name = 'lego.png'
 img = cv2.imread(folder_input + figure_name, cv2.IMREAD_UNCHANGED)
 img = img.astype('float')
 
@@ -20,11 +20,15 @@ img = img/np.max(img)
 cv2.imshow('Normalized image', img)
 cv2.waitKey(0)
 
-# Make color images grayscale
-# Skip this block if you handle the multi-channel Chan-Sandberg-Vese model
+# ================================
+# Detect color mode instead of forcing grayscale
+# ================================
 if len(img.shape) > 2:
-    nc = img.shape[2] # number of channels
-    img = np.mean(img, axis=2)
+    color_mode = "Colored"
+    print(f"Running Chan-Vese in 'Colored' mode.")
+else:
+    color_mode = "Gray"
+    print("Running Chan-Vese in 'Gray' mode.")
 
 # ================================
 # Parameters
@@ -37,12 +41,13 @@ lambda2 = 1
 tol = 10e-3
 dt = 0.5
 iterMax = int(1e5)
+epsilon = 1
 
 # ================================
 # Phi initialization
 # ================================
 
-phi = initialize_phi(img.shape, method='checkerboard')
+phi = initialize_phi(img.shape, method='checkerboard', color=color_mode)
 
 # Check initial phi
 plt.figure(figsize=(5,4))
@@ -54,22 +59,16 @@ plt.show()
 # ================================
 # Main loop
 # ================================
-
-# CODE TO COMPLETE
-# Explicit gradient descent or Semi-explicit (Gauss-Seidel) gradient descent (Bonus)
-# Extra: Implement the Chan-Sandberg-Vese model (for colored images)
-# Refer to Getreuer's paper (2012)
-
 for it in range(iterMax):
 
     # Save previous phi
     phi_old = phi.copy()
 
     # Update brightness levels c1 and c2 with phi fixed
-    c1, c2 = update_brightness(img, phi)
+    c1, c2 = update_brightness(img, phi, color=color_mode)
 
     # Update phi with c1 and c2 fixed
-    phi = update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt)
+    phi = update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=epsilon, color=color_mode)
 
     # Check for convergence
     diff = calculate_difference(phi, phi_old)
