@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def initialize_phi(shape, method='checkerboard', seed=42, color="Gray"):
 
@@ -165,3 +166,15 @@ def calculate_B_at_point(phi_n, phi_np1, mu, eta, i, j):
     denominator = np.pow(eta, 2) + np.pow(((phi_n[i+1,j] - phi_np1[i-1,j])/2), 2) + np.pow((phi_n[i,j+1] - phi_n[i,j]), 2) 
     return mu / np.sqrt(denominator)
 
+def save_overlay(img, phi, out_path, color_mode):
+    plt.figure(figsize=(6, 6))
+    if color_mode == "Colored":
+        bg = img.copy()
+        plt.imshow(bg[..., ::-1])   # BGR->RGB
+    else:
+        plt.imshow(img, cmap='gray', vmin=0, vmax=1)
+    plt.contour(phi, levels=[0], linewidths=1.5, colors='r')
+    plt.axis('off')
+    plt.tight_layout(pad=0)
+    plt.savefig(out_path, bbox_inches='tight', pad_inches=0, dpi=200)
+    plt.close()

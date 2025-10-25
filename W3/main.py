@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import initialize_phi, update_brightness, update_phi, calculate_difference
+from utils import initialize_phi, update_brightness, update_phi, calculate_difference, save_overlay
 
 def main(args):
     folder_input = args.input_folder
@@ -50,11 +50,12 @@ def main(args):
     dt = float(args.dt)
     iterMax = int(args.iterMax)
     epsilon = float(args.epsilon)
+    plot_every = int(args.plot_every)
 
     # ================================
     # Phi initialization
     # ================================
-    phi = initialize_phi(img.shape, method='checkerboard', color=color_mode)
+    phi = initialize_phi(img.shape, method=args.init_method, color=color_mode)
 
     # Check initial phi
     plt.figure(figsize=(5,4))
@@ -62,6 +63,15 @@ def main(args):
     plt.colorbar(label=r'$\phi$ value')
     plt.title(r'Initial level set $\phi$')
     plt.show()
+
+    # ================================
+    # Output paths
+    # ================================
+    results_folder = args.results_folder
+    base_name, ext = os.path.splitext(figure_name)
+    param_str = f"mu{mu}_nu{nu}_eta{eta}_l1{lambda1}_l2{lambda2}_dt{dt}_eps{epsilon}_it{iterMax}"
+    out_dir = os.path.join(results_folder, f"{base_name}_{param_str}")
+    os.makedirs(out_dir, exist_ok=True)
 
     # ================================
     # Main loop
@@ -77,6 +87,11 @@ def main(args):
         # Update phi with c1 and c2 fixed
         phi = update_phi(phi, phi_old, c1, c2, img, mu, nu, eta, lambda1, lambda2, dt, epsilon=epsilon, color=color_mode)
 
+        # Optionally save current overlay
+        if plot_every > 0 and ((it + 1) % plot_every == 0):
+            overlay_path = os.path.join(out_dir, f"{base_name}_{it+1:06d}_it.png")
+            save_overlay(img, phi, overlay_path, color_mode)
+
         # Check for convergence
         diff = calculate_difference(phi, phi_old)
         print(diff)
@@ -90,26 +105,31 @@ def main(args):
     # Show output image
     cv2.imshow('Segmented image', seg); 
     cv2.waitKey(0)
-
-    # Save outputs
-    results_folder = args.results_folder
-    os.makedirs(results_folder, exist_ok=True)
     
-    # Build parameter string to append to filenames
-    param_str = f"mu{mu}_nu{nu}_eta{eta}_l1{lambda1}_l2{lambda2}_dt{dt}_eps{epsilon}_it{iterMax}"
+    # ===============================
+    # Save final results
+    # ===============================
 
-    base_name, ext = os.path.splitext(figure_name)
-    seg_path = os.path.join(results_folder, f'seg_{base_name}_{param_str}{ext}')
+    # Final segmented image
+    seg_path = os.path.join(out_dir, f'{base_name}_seg{ext}')
     cv2.imwrite(seg_path, seg)
     print(f"Saved segmented image to: {seg_path}")
 
+    # Final overlay
+    final_overlay_path = os.path.join(out_dir, f"{base_name}_final_it.png")
+    save_overlay(img, phi, final_overlay_path, color_mode)
+    print(f"Saved final overlay to: {final_overlay_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', type=str, default='circles.png', help='Image filename to be processed')
     parser.add_argument('--input_folder', type=str, default='images', help='Folder containing input images')
     parser.add_argument('--results_folder', type=str, default='results/', help='Folder to save results')
-    # Poisson / Chan-Vese parameters (allow overrides from CLI)
+    parser.add_argument('--init_method', type=str, default='checkerboard',
+                        choices=['checkerboard', 'circle', 'random'],
+                        help='Initialization method for phi')
+    parser.add_argument('--plot_every', type=int, default=0, help='Save overlay every N iters (0 = only final)')
+    # Chan-Vese parameters (allow overrides from CLI)
     parser.add_argument('--mu', type=float, default=0.2, help='Mu (length term weight)')
     parser.add_argument('--nu', type=float, default=0.0, help='Nu (area term weight)')
     parser.add_argument('--eta', type=float, default=1e-8, help='Eta (small constant)')
