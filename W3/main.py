@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import initialize_phi, update_brightness, update_phi, calculate_difference, save_overlay
+from utils import initialize_phi, update_brightness, update_phi, calculate_difference, save_overlay, plot_diff_progress
 
 def main(args):
     folder_input = args.input_folder
@@ -51,6 +51,7 @@ def main(args):
     iterMax = int(args.iterMax)
     epsilon = float(args.epsilon)
     plot_every = int(args.plot_every)
+    plot_diff = int(args.plot_diff)
 
     # ================================
     # Phi initialization
@@ -76,6 +77,8 @@ def main(args):
     # ================================
     # Main loop
     # ================================
+    if plot_diff:
+        diff_values = []
     for it in range(iterMax):
 
         # Save previous phi
@@ -94,6 +97,8 @@ def main(args):
 
         # Check for convergence
         diff = calculate_difference(phi, phi_old)
+        if plot_diff:
+            diff_values.append(diff)
         print(diff)
         if diff <= tol:
             print(f'Converged in {it} iterations.')
@@ -109,6 +114,9 @@ def main(args):
     # ===============================
     # Save final results
     # ===============================
+    if plot_diff:
+        diff_progress_output_dir = os.path.join(out_dir, f"{base_name}_diff_progress.png")
+        plot_diff_progress(diff_values, save_path=diff_progress_output_dir)
 
     # Final segmented image
     seg_path = os.path.join(out_dir, f'{base_name}_seg{ext}')
@@ -129,6 +137,7 @@ if __name__ == "__main__":
                         choices=['checkerboard', 'circle', 'random'],
                         help='Initialization method for phi')
     parser.add_argument('--plot_every', type=int, default=0, help='Save overlay every N iters (0 = only final)')
+    parser.add_argument('--plot_diff', type=int, default=True, help='Saves a plot of the diff progression')
     # Chan-Vese parameters (allow overrides from CLI)
     parser.add_argument('--mu', type=float, default=0.2, help='Mu (length term weight)')
     parser.add_argument('--nu', type=float, default=0.0, help='Nu (area term weight)')

@@ -178,3 +178,20 @@ def save_overlay(img, phi, out_path, color_mode):
     plt.tight_layout(pad=0)
     plt.savefig(out_path, bbox_inches='tight', pad_inches=0, dpi=200)
     plt.close()
+
+
+def plot_diff_progress(values, title="Diff Progress", ylabel="Diff value", xlabel="Step", save_path=None):
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(values, marker='o', linewidth=2)
+
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.grid(True)
+
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+        print(f"Plot saved to: {save_path}")
+
+    plt.show()
