@@ -6,7 +6,7 @@ from pathlib import Path
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, default=Path("./images/"),
-                        help="Base folder containing image and mask files (default: ./images/)")
+                        help="Base folder containing image and mask files")
     parser.add_argument("--image", type=str, required=True,
                         help="Image filename (e.g., star.png). Searched under --data.")
     parser.add_argument("--mask", type=str, required=True,
@@ -15,6 +15,9 @@ def parse_args():
                         help="Lambda value for regional cost.")
     parser.add_argument("--sigma", type=float, default=1.0, dest="sigma_val",
                         help="Sigma value for boundary cost.")
+    parser.add_argument("--algorithm", type=str, default='bk',
+                        choices=['bk', 'dinic', 'edmonds_karp', 'preflow'],
+                        help="Max-flow algorithm to use.")
     args = parser.parse_args()
 
     # Build full paths from --data + filenames

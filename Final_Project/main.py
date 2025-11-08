@@ -8,7 +8,7 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-from bk_maxflow import graph_cut_from_adj
+from graph_solvers import run_maxflow 
 from utils import extract_seeds_from_mask, draw_seeds_on_image, parse_args
 
 class ImageGraph:
@@ -166,15 +166,16 @@ class ImageGraph:
         prob = max(prob, epsilon) 
         return -np.log(prob)
     
-    def segment_bk(self):
+    def segment(self, algorithm: str):
         """
-        Runs BK graph cut on the built adjacency and returns:
+        Runs graph cut on the built adjacency and returns:
           - flow (float)
           - labels (H x W uint8 mask, 0=foreground/source, 1=background/sink)
         """
 
-        flow, labels_flat = graph_cut_from_adj(
-            self.adjacancy_matrix, self.S_index, self.T_index, self.num_pixels
+        flow, labels_flat = run_maxflow(
+            self.adjacancy_matrix, self.S_index, self.T_index, self.num_pixels,
+            algorithm=algorithm
         )
         h, w = self.image.shape
         mask = labels_flat.reshape(h, w)
@@ -187,6 +188,7 @@ def main():
     print(f"Mask: {args.mask}")
     print(f"Lambda: {args.lambda_val}")
     print(f"Sigma: {args.sigma_val}")
+    print(f"Algorithm: {args.algorithm}")
 
     # Setup results directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -225,7 +227,7 @@ def main():
     start_time = time.time()
     
     graph = ImageGraph(img, obj_seeds, bg_seeds, lambda_val=args.lambda_val, sigma_val=args.sigma_val) 
-    flow, mask = graph.segment_bk()
+    flow, mask = graph.segment(algorithm=args.algorithm)
         
     end_time = time.time()
     seg_time = end_time - start_time
@@ -246,6 +248,7 @@ def main():
         "mask": args.mask,
         "lambda": args.lambda_val,
         "sigma": args.sigma_val,
+        "algorithm": args.algorithm,
         "segmentation_time_s": f"{seg_time:.4f}"
     }
     
