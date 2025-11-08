@@ -54,6 +54,5 @@ Desktop.ini
 *.sqlite3
 
 # Images
-images/
 results/
 *.png
