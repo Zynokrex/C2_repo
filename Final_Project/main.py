@@ -2,44 +2,14 @@ import cv2
 import numpy as np
 from scipy.stats import gaussian_kde
 import scipy.sparse as sp
+import argparse
+import time
+import csv
+from datetime import datetime
+from pathlib import Path
+
 from bk_maxflow import graph_cut_from_adj
-
-def create_circle_image():
-    """
-    Creates a 256x256 white image with a circle of 128px diameter in the center.
-    
-    Returns:
-        numpy.ndarray: The generated image as a BGR array
-    """
-    image = np.ones((256, 256, 3), dtype=np.uint8) * 255
-    
-    center = (128, 128)  # Center of the image
-    radius = 64  # 128px diameter / 2 = 64px radius
-    
-    cv2.circle(image, center, radius, (0, 0, 0), -1)  # -1 for filled circle
-    
-    return image
-
-def plot_image_with_seeds(image, obj_seeds, bg_seeds):
-    overlay = image.copy()
-    
-    obj_seeds = np.array(obj_seeds, dtype=np.int32)
-    bg_seeds = np.array(bg_seeds, dtype=np.int32)
-    
-    # Draw object seeds (red circles)
-    for x, y in obj_seeds:
-        cv2.circle(overlay, (x, y), radius=5, color=(0, 0, 255), thickness=-1)  # Red filled circle
-        cv2.circle(overlay, (x, y), radius=6, color=(255, 255, 255), thickness=1)  # White border
-    
-    # Draw background seeds (blue squares)
-    for x, y in bg_seeds:
-        cv2.rectangle(overlay, (x-4, y-4), (x+4, y+4), color=(255, 0, 0), thickness=-1)  # Blue filled square
-        cv2.rectangle(overlay, (x-5, y-5), (x+5, y+5), color=(255, 255, 255), thickness=1)  # White border
-    
-    # Display with CV2
-    cv2.imshow("Overlay", overlay)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+from utils import extract_seeds_from_mask, draw_seeds_on_image, parse_args
 
 class ImageGraph:
     def __init__(self, image: np.ndarray, obj_seeds: np.ndarray, bg_seeds: np.ndarray, lambda_val = 1, sigma_val = 1):
@@ -61,10 +31,6 @@ class ImageGraph:
 
         self.adjacancy_matrix = self._setup_adj_matrix()
 
-        pass
-
-    import scipy.sparse as sp
-
     def _setup_adj_matrix(self):
         height, width = self.image.shape
         num_pixels = height * width
@@ -75,8 +41,8 @@ class ImageGraph:
         
         max_sum_b = 0
         
-        obj_seeds_set = set((x, y) for x, y in self.obj_seeds)
-        bg_seeds_set = set((x, y) for x, y in self.bg_seeds)
+        obj_seeds_set = set(map(tuple, self.obj_seeds))
+        bg_seeds_set = set(map(tuple, self.bg_seeds))
         
         # Add n-links 
         for y in range(height):
@@ -116,23 +82,21 @@ class ImageGraph:
                     # Object seed: K to S, 0 to T
                     rows.extend([pixel_idx, self.S_index])
                     cols.extend([self.S_index, pixel_idx])
-                    data.extend([K, K])  # {p,S} edges
+                    data.extend([K, K]) # {p,S} edges
                     
-                    # {p,T} edges with 0 cost
                     rows.extend([pixel_idx, self.T_index])
                     cols.extend([self.T_index, pixel_idx])
-                    data.extend([0, 0])
+                    data.extend([0, 0]) # {p,T} edges
                     
                 elif (x, y) in bg_seeds_set:
                     # Background seed: 0 to S, K to T
                     rows.extend([pixel_idx, self.S_index])
                     cols.extend([self.S_index, pixel_idx])
-                    data.extend([0, 0])  # {p,S} edges
+                    data.extend([0, 0]) # {p,S} edges
                     
-                    # {p,T} edges with K cost
                     rows.extend([pixel_idx, self.T_index])
                     cols.extend([self.T_index, pixel_idx])
-                    data.extend([K, K])
+                    data.extend([K, K]) # {p,T} edges
                     
                 else:
                     # Regular pixel: regional costs to both terminals
@@ -160,12 +124,11 @@ class ImageGraph:
         obj_intensities = np.array([self.image[y, x] for x, y in self.obj_seeds])
         bg_intensities = np.array([self.image[y, x] for x, y in self.bg_seeds])
         
-        print(f"Object seed intensities: {obj_intensities}")
-        print(f"Background seed intensities: {bg_intensities}")
-        
         # Check if we have enough samples
-        if len(obj_intensities) < 2 or len(bg_intensities) < 2:
-            raise ValueError("Need at least 2 seed points for each class")
+        if len(obj_intensities) < 2:
+            raise ValueError(f"Need at least 2 object seed points for KDE. Found {len(obj_intensities)}")
+        if len(bg_intensities) < 2:
+            raise ValueError(f"Need at least 2 background seed points for KDE. Found {len(bg_intensities)}")
         
         obj_variance = np.var(obj_intensities)
         bg_variance = np.var(bg_intensities)
@@ -217,21 +180,81 @@ class ImageGraph:
         mask = labels_flat.reshape(h, w)
         return flow, mask
 
-    
-# Example usage:
-if __name__ == "__main__":
-    # Create the image
-    img = create_circle_image()
-    obj_seeds = np.array([[128, 128], [130, 130], [120, 120], [140, 128]]) # Several points inside the circle
-    bg_seeds = np.array([[5, 5], [10, 10], [200, 200], [240, 240]])     # Several points outside the circle
-    plot_image_with_seeds(img, obj_seeds, bg_seeds)
+def main():
+    args = parse_args()
 
-    graph = ImageGraph(img, obj_seeds, bg_seeds) 
+    print(f"Image: {args.image}")
+    print(f"Mask: {args.mask}")
+    print(f"Lambda: {args.lambda_val}")
+    print(f"Sigma: {args.sigma_val}")
+
+    # Setup results directory
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    image_name = Path(args.image).stem
+    results_dir = Path("./results") / f"exp_{timestamp}"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load image and mask
+    img_path = Path(args.image)
+    mask_path = Path(args.mask)
+    img = cv2.imread(str(img_path))
+    mask_img = cv2.imread(str(mask_path))
+
+    if img is None:
+        print(f"Error: Could not read image from {img_path}")
+        return
+    if mask_img is None:
+        print(f"Error: Could not read mask from {mask_path}")
+        return
+    if img.shape[:2] != mask_img.shape[:2]:
+        print(f"Error: Image shape {img.shape[:2]} and mask shape {mask_img.shape[:2]} do not match.")
+        return
+
+    # Extract seeds
+    obj_seeds, bg_seeds = extract_seeds_from_mask(mask_img)
+    print(f"Found {len(obj_seeds)} object seeds and {len(bg_seeds)} background seeds.")
+
+    # Save the overlay (original image + seeds)
+    overlay_display = draw_seeds_on_image(img, obj_seeds, bg_seeds)
+    overlay_path = results_dir / f"{image_name}_overlay.png"
+    cv2.imwrite(str(overlay_path), overlay_display)
+    print(f"Saved seed overlay to {overlay_path}")
+
+    # Run segmentation
+    print("Building graph and running segmentation...")
+    start_time = time.time()
+    
+    graph = ImageGraph(img, obj_seeds, bg_seeds, lambda_val=args.lambda_val, sigma_val=args.sigma_val) 
     flow, mask = graph.segment_bk()
-    overlay = img.copy()
-    overlay[mask == 0] = (0, 0, 255)  # Red overlay on object
+        
+    end_time = time.time()
+    seg_time = end_time - start_time
+    print(f"Segmentation finished in {seg_time:.4f} seconds.")
 
-    result = cv2.addWeighted(img, 0.6, overlay, 0.4, 0)
-    cv2.imshow("Segmentation", result)
-    cv2.waitKey(0)
+    # Save segmentation result
+    overlay_seg = img.copy()
+    overlay_seg[mask == 0] = (0, 0, 255)  # mask == 0 is the object/source side. Red overlay on object
+    result = cv2.addWeighted(img, 0.6, overlay_seg, 0.4, 0)
+    segmented_path = results_dir / f"{image_name}_segmented.png"
+    cv2.imwrite(str(segmented_path), result)
+    print(f"Saved segmented image to {segmented_path}")
+
+    # Save CSV with parameters and time
+    csv_path = results_dir / "params_and_time.csv"
+    report_data = {
+        "image": args.image,
+        "mask": args.mask,
+        "lambda": args.lambda_val,
+        "sigma": args.sigma_val,
+        "segmentation_time_s": f"{seg_time:.4f}"
+    }
     
+    with open(csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['parameter', 'value'])
+        for key, value in report_data.items():
+            writer.writerow([key, value])
+    print(f"Saved parameters to {csv_path}")
+
+if __name__ == "__main__":
+    main()
