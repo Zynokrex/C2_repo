@@ -1,7 +1,9 @@
 import numpy as np
 import scipy.sparse as sp
 import networkx as nx
-    
+
+from bk_maxflow import graph_cut_from_adj 
+
 def run_maxflow(
     adj: sp.csr_matrix, S_index: int, T_index: int, num_pixels: int, algorithm: str = 'bk'
 ) -> tuple[float, np.ndarray]:
@@ -10,6 +12,9 @@ def run_maxflow(
     """
     if not sp.isspmatrix_csr(adj):
         adj = adj.tocsr()
+
+    if algorithm == 'bk':
+        return graph_cut_from_adj(adj, S_index, T_index, num_pixels)
 
     G = nx.DiGraph()
     n = int(adj.shape[0])
@@ -30,7 +35,7 @@ def run_maxflow(
                 if u != v and M[u, v] > 0:
                     G.add_edge(u, v, capacity=float(M[u, v]))
 
-    if algorithm == 'bk':
+    if algorithm == 'bk_nx':
         flow_func = nx.algorithms.flow.boykov_kolmogorov
     elif algorithm == 'dinic':
         flow_func = nx.algorithms.flow.dinitz
