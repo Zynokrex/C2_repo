@@ -41,7 +41,7 @@ class Segmenter:
 
     def run(self, img: np.ndarray, obj_seeds: np.ndarray, bg_seeds: np.ndarray,
             lambda_val: float = 1.0, sigma_val: float = 1.0, algorithm: str = "bk",
-            image_name: str = "image", save: bool = True) -> dict:
+            image_name: str = "image", directed: bool = False, save: bool = True) -> dict:
         # Validate input shapes & types
         if img is None:
             raise ValueError("image_bgr is None")
@@ -55,7 +55,7 @@ class Segmenter:
         start = time.time()
 
         # Run segmentation
-        graph = ImageGraph(img, obj_seeds, bg_seeds, lambda_val=lambda_val, sigma_val=sigma_val)
+        graph = ImageGraph(img, obj_seeds, bg_seeds, lambda_val=lambda_val, sigma_val=sigma_val, directed=directed)
         flow, mask = graph.segment(algorithm=algorithm)
 
         seg_time = time.time() - start
@@ -138,7 +138,7 @@ def main():
 
     segmenter = Segmenter(results_dir=results_dir)  # or pass results_dir explicitly
     segmenter.run(img, obj_seeds, bg_seeds, lambda_val=args.lambda_val,
-                        sigma_val=args.sigma_val, algorithm=args.algorithm,
+                        sigma_val=args.sigma_val, algorithm=args.algorithm, directed=args.directed,
                         image_name=image_name, save=True)
 
 

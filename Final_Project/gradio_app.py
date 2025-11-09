@@ -9,7 +9,7 @@ from main import Segmenter
 from utils import extract_seeds_from_mask
 
 # Callback that runs segmentation using stored seeds + selected params
-def run_segmentation(original_rgb, obj_seeds, bg_seeds, lambda_val, sigma_val, algorithm):
+def run_segmentation(original_rgb, obj_seeds, bg_seeds, lambda_val, sigma_val, algorithm, directed):
     # original_rgb: RGB uint8 image captured from the editor's background via gr.State
     if original_rgb is None:
         return "No image provided", None
@@ -37,6 +37,7 @@ def run_segmentation(original_rgb, obj_seeds, bg_seeds, lambda_val, sigma_val, a
             lambda_val=lambda_val,
             sigma_val=sigma_val,
             algorithm=algorithm,
+            directed=directed,
             image_name="gradio"
         )
 
@@ -135,7 +136,8 @@ with gr.Blocks() as demo:
     # slider & algorithm
     lambda_slider = gr.Slider(minimum=0.1, maximum=5.0, value=1.0, step=0.1, label="lambda")
     sigma_slider = gr.Slider(minimum=0.1, maximum=10.0, value=1.0, step=0.1, label="sigma")
-    algo_choice = gr.Dropdown(["bk", "dinic", "edmonds_karp", "preflow"], value="bk", label="algorithm")
+    algo_choice = gr.Dropdown(["bk", "bk_nx", "dinic", "edmonds_karp", "preflow"], value="bk", label="algorithm")
+    directed_choice = gr.Dropdown(["True", "False"], value="False", label="directed")
 
     proc_btn.click(process_mask_and_store,
                    inputs=editor,
@@ -146,7 +148,7 @@ with gr.Blocks() as demo:
     seg_image = gr.Image(type="numpy")
 
     seg_btn.click(run_segmentation,
-                  inputs=[original_state, obj_state, bg_state, lambda_slider, sigma_slider, algo_choice],
+                  inputs=[original_state, obj_state, bg_state, lambda_slider, sigma_slider, algo_choice, directed_choice],
                   outputs=[seg_info, seg_image])
 
 
