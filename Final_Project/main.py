@@ -12,6 +12,7 @@ def main():
 
     print(f"Image: {args.image}")
     print(f"Mask: {args.mask}")
+    print(f"Directed: {args.directed}")
     print(f"Lambda: {args.lambda_val}")
     print(f"Sigma: {args.sigma_val}")
     print(f"Algorithm: {args.algorithm}")
@@ -52,7 +53,7 @@ def main():
     print("Building graph and running segmentation...")
     start_time = time.time()
     
-    graph = ImageGraph(img, obj_seeds, bg_seeds, lambda_val=args.lambda_val, sigma_val=args.sigma_val) 
+    graph = ImageGraph(img, obj_seeds, bg_seeds, directed=args.directed, lambda_val=args.lambda_val, sigma_val=args.sigma_val) 
     flow, mask = graph.segment(algorithm=args.algorithm)
         
     end_time = time.time()
@@ -72,6 +73,7 @@ def main():
     report_data = {
         "image": args.image,
         "mask": args.mask,
+        "directed": args.directed,
         "lambda": args.lambda_val,
         "sigma": args.sigma_val,
         "algorithm": args.algorithm,

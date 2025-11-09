@@ -5,12 +5,13 @@ from scipy.stats import gaussian_kde
 from graph_solvers import run_maxflow 
 
 class ImageGraph:
-    def __init__(self, image: np.ndarray, obj_seeds: np.ndarray, bg_seeds: np.ndarray, lambda_val = 1, sigma_val = 1):
+    def __init__(self, image: np.ndarray, obj_seeds: np.ndarray, bg_seeds: np.ndarray, directed = False, lambda_val = 1, sigma_val = 1):
 
         if image.ndim == 3:
             self.image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:
             self.image = image
+        self.directed = directed
 
         self.obj_seeds = obj_seeds
         self.bg_seeds = bg_seeds
@@ -50,19 +51,38 @@ class ImageGraph:
                         neighbor_idx = ny * width + nx
                         
                         # Compute boundary penalty
-                        intensity_diff = float(self.image[y, x]) - float(self.image[ny, nx])
-                        boundary_cost = np.exp(-(intensity_diff ** 2) / (2 * self.sigma_val ** 2))
+                        intensity_p = float(self.image[y, x])
+                        intensity_q = float(self.image[ny, nx])
+                        intensity_diff = intensity_p - intensity_q
                         
-                        # Add bidirectional edge (undirected graph)
-                        rows.extend([pixel_idx, neighbor_idx])
-                        cols.extend([neighbor_idx, pixel_idx])
-                        data.extend([boundary_cost, boundary_cost])
+                        if not self.directed:
+                            boundary_cost = np.exp(-(intensity_diff ** 2) / (2 * self.sigma_val ** 2))
+
+                            # Add bidirectional edge (undirected graph)
+                            rows.extend([pixel_idx, neighbor_idx])
+                            cols.extend([neighbor_idx, pixel_idx])
+                            data.extend([boundary_cost, boundary_cost])
+                            pixel_sum_B += boundary_cost
                         
-                        pixel_sum_B += boundary_cost
-                
+                        else: 
+                            if intensity_p <= intensity_q:
+                                boundary_cost_pq = 1.0
+                                boundary_cost_qp = np.exp(-(intensity_diff ** 2) / (2 * self.sigma_val ** 2))
+                            else:
+                                boundary_cost_pq = np.exp(-(intensity_diff ** 2) / (2 * self.sigma_val ** 2))
+                                boundary_cost_qp = 1.0
+
+                            # Add directed edges
+                            rows.extend([pixel_idx, neighbor_idx])
+                            cols.extend([neighbor_idx, pixel_idx])
+                            data.extend([boundary_cost_pq, boundary_cost_qp])
+
+                            # Update sum of max boundary costs
+                            pixel_sum_B += max(boundary_cost_pq, boundary_cost_qp)
+                                            
                 if pixel_sum_B > max_sum_b:
                     max_sum_b = pixel_sum_B
-        
+                                    
         K = 1 + max_sum_b
         
         # Add t-links to both S and T

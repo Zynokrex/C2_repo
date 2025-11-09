@@ -11,6 +11,8 @@ def parse_args():
                         help="Image filename (e.g., star.png). Searched under --data.")
     parser.add_argument("--mask", type=str, required=True,
                         help="Mask filename (e.g., star_mask.png). Searched under --data.")
+    parser.add_argument("--directed", type=bool, default=False,
+                        help="Whether to use the directed version or undirected of the graph")
     parser.add_argument("--lambda", type=float, default=1.0, dest="lambda_val",
                         help="Lambda value for regional cost.")
     parser.add_argument("--sigma", type=float, default=1.0, dest="sigma_val",
