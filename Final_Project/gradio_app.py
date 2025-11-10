@@ -84,7 +84,6 @@ def map_to_allowed_seed_colors(rgb: np.ndarray, l2_threshold: int = 30) -> np.nd
 
 def process_mask_and_store(img_editor_output):
     composite = img_editor_output["composite"]  # RGB(A) uint8
-
     bg_rgb = img_editor_output.get("background", None)
     if composite.shape[2] == 4:
         rgb = composite[..., :3]
@@ -115,7 +114,7 @@ seed_colors = [
 ]
 
 with gr.Blocks() as demo:
-    gr.Markdown("Draw your **Red (Object)** and **Blue (Background)** seeds on the image below.")
+    gr.Markdown("# C2 — Graph-Cut Segmentation Demo")
     # Use gr.ImageEditor
     editor = gr.ImageEditor(
         type="numpy",
@@ -133,11 +132,22 @@ with gr.Blocks() as demo:
     bg_state = gr.State()           # bg seeds np.ndarray
     original_state = gr.State()     # original background RGB from the editor
 
-    # slider & algorithm
-    lambda_slider = gr.Slider(minimum=0.1, maximum=5.0, value=1.0, step=0.1, label="lambda")
-    sigma_slider = gr.Slider(minimum=0.1, maximum=10.0, value=1.0, step=0.1, label="sigma")
-    algo_choice = gr.Dropdown(["bk", "bk_nx", "dinic", "edmonds_karp", "preflow"], value="bk", label="algorithm")
-    directed_choice = gr.Dropdown(["True", "False"], value="False", label="directed")
+    with gr.Sidebar():
+        gr.Markdown(
+        """
+        ## Instructions
+        1. Upload an image using the editor above.
+        2. Use the brush tool to draw **Red** seeds on the object and **Blue** seeds on the background.
+        3. Click **Process Seeds** to store the seeds.
+        4. Adjust the segmentation parameters in the sidebar.
+        5. Click **Segment** to run the graph-cut segmentation.
+        """
+        )
+        # slider & algorithm
+        lambda_slider = gr.Slider(minimum=0.1, maximum=5.0, value=1.0, step=0.1, label="lambda")
+        sigma_slider = gr.Slider(minimum=0.1, maximum=10.0, value=1.0, step=0.1, label="sigma")
+        algo_choice = gr.Dropdown(["bk", "bk_nx", "dinic", "edmonds_karp", "preflow"], value="bk", label="algorithm")
+        directed_choice = gr.Dropdown(["True", "False"], value="False", label="directed")
 
     proc_btn.click(process_mask_and_store,
                    inputs=editor,
